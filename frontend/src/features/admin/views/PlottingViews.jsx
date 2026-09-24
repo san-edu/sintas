@@ -10,7 +10,22 @@ function MembershipStatus({ isActive }) {
   )
 }
 
-export function MembershipsTable({ items }) {
+function ToggleButton({ isActive, name, pending, onClick }) {
+  const label = isActive ? 'Nonaktifkan' : 'Aktifkan'
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={pending}
+      aria-label={`${label} ${name}`}
+      className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-semibold text-blue-500 hover:bg-blue-100/50 disabled:opacity-60"
+    >
+      {pending ? 'Memproses…' : label}
+    </button>
+  )
+}
+
+export function MembershipsTable({ items, onToggle, pendingId }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-black/10 bg-white">
       <table className="w-full text-left text-sm">
@@ -22,6 +37,7 @@ export function MembershipsTable({ items }) {
             <th scope="col" className="p-3 font-semibold">NISN</th>
             <th scope="col" className="p-3 font-semibold">Sejak</th>
             <th scope="col" className="p-3 font-semibold">Status</th>
+            <th scope="col" className="p-3 font-semibold">Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -40,6 +56,14 @@ export function MembershipsTable({ items }) {
               <td className="p-3">
                 <MembershipStatus isActive={membership.isActive} />
               </td>
+              <td className="p-3">
+                <ToggleButton
+                  isActive={membership.isActive}
+                  name={membership.student?.name ?? 'siswa'}
+                  pending={pendingId === membership.id}
+                  onClick={() => onToggle(membership)}
+                />
+              </td>
             </tr>
           ))}
         </tbody>
@@ -48,7 +72,7 @@ export function MembershipsTable({ items }) {
   )
 }
 
-export function AssignmentsManageTable({ items }) {
+export function AssignmentsManageTable({ items, onToggle, pendingId }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-black/10 bg-white">
       <table className="w-full text-left text-sm">
@@ -60,6 +84,7 @@ export function AssignmentsManageTable({ items }) {
             <th scope="col" className="p-3 font-semibold">Guru</th>
             <th scope="col" className="p-3 font-semibold">Sejak</th>
             <th scope="col" className="p-3 font-semibold">Status</th>
+            <th scope="col" className="p-3 font-semibold">Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -79,6 +104,14 @@ export function AssignmentsManageTable({ items }) {
               </td>
               <td className="p-3">
                 <MembershipStatus isActive={assignment.isActive} />
+              </td>
+              <td className="p-3">
+                <ToggleButton
+                  isActive={assignment.isActive}
+                  name={assignment.teacher?.name ?? 'guru'}
+                  pending={pendingId === assignment.id}
+                  onClick={() => onToggle(assignment)}
+                />
               </td>
             </tr>
           ))}

@@ -1,4 +1,6 @@
+import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import { useState } from 'react'
+import { ConfirmDialog } from '../../components/common/ConfirmDialog'
 import { EmptyState } from '../../components/feedback/EmptyState'
 import { SectionState } from '../../components/feedback/SectionState'
 import { Pagination } from '../../components/common/Pagination'
@@ -6,7 +8,14 @@ import { Skeleton } from '../../components/common/Skeleton'
 import { useIsOnline } from '../../hooks/useIsOnline'
 import { useClasses } from '../../features/admin/hooks/useAcademicMasters'
 import { useAdminUsers } from '../../features/admin/hooks/useAdminUsers'
-import { useAssignmentsManage, useMemberships } from '../../features/admin/hooks/usePlotting'
+import {
+  useAssignmentsManage,
+  useMemberships,
+  useUpdateAssignment,
+  useUpdateMembership,
+} from '../../features/admin/hooks/usePlotting'
+import { AssignmentFormDialog } from '../../features/admin/forms/AssignmentFormDialog'
+import { MembershipFormDialog } from '../../features/admin/forms/MembershipFormDialog'
 import {
   AssignmentsManageTable,
   MembershipsTable,
@@ -27,11 +36,15 @@ export default function AdminPlottingPage() {
   const [page, setPage] = useState(1)
   const [classId, setClassId] = useState('')
   const [teacherId, setTeacherId] = useState('')
+  const [formOpen, setFormOpen] = useState(false)
+  const [deactivateTarget, setDeactivateTarget] = useState(null)
 
   const classesQuery = useClasses({ page: 1, limit: 100 })
   const teachersQuery = useAdminUsers({ page: 1, limit: 100, role: 'TEACHER' })
   const membershipsQuery = useMemberships({ page, limit: LIMIT, classId: classId || undefined })
   const assignmentsQuery = useAssignmentsManage({ page, limit: LIMIT, teacherId: teacherId || undefined })
+  const updateMembership = useUpdateMembership()
+  const updateAssignment = useUpdateAssignment()
 
   const classes = classesQuery.data?.items ?? []
   const teachers = teachersQuery.data?.items ?? []
@@ -39,11 +52,33 @@ export default function AdminPlottingPage() {
   const meta = tab === 'memberships' ? membershipsQuery.data?.meta : assignmentsQuery.data?.meta
   const activeQuery = tab === 'memberships' ? membershipsQuery : assignmentsQuery
 
+  const activeUpdate = tab === 'memberships' ? updateMembership : updateAssignment
+  const pendingId = activeUpdate.isPending ? activeUpdate.variables?.id : null
+
+  const setActive = (item, isActive) => {
+    const mutation = tab === 'memberships' ? updateMembership : updateAssignment
+    mutation.mutate({ id: item.id, data: { isActive } })
+  }
+
+  const onToggle = (item) => {
+    if (item.isActive) {
+      setDeactivateTarget(item)
+      return
+    }
+    setActive(item, true)
+  }
+
+  const confirmDeactivate = () => {
+    if (!deactivateTarget) return
+    setActive(deactivateTarget, false)
+    setDeactivateTarget(null)
+  }
+
   return (
     <section className="mx-auto w-full max-w-5xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-ink-900">Penempatan</h1>
-        <p className="mt-1 text-sm text-slate-700">Lihat siswa pada kelas dan penugasan guru (hanya baca).</p>
+        <p className="mt-1 text-sm text-slate-700">Kelola penempatan siswa dan penugasan guru.</p>
       </div>
 
       <div role="tablist" aria-label="Penempatan" className="flex flex-wrap gap-2">
@@ -71,11 +106,11 @@ export default function AdminPlottingPage() {
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-black/10 bg-white p-4">
         {tab === 'memberships' ? (
           <div className="min-w-60">
-            <label htmlFor="membership-class" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="membership-class-filter" className="block text-sm font-medium text-slate-700">
               Kelas
             </label>
             <select
-              id="membership-class"
+              id="membership-class-filter"
               value={classId}
               onChange={(event) => {
                 setClassId(event.target.value)
@@ -93,11 +128,11 @@ export default function AdminPlottingPage() {
           </div>
         ) : (
           <div className="min-w-60">
-            <label htmlFor="assignment-teacher" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="assignment-teacher-filter" className="block text-sm font-medium text-slate-700">
               Guru
             </label>
             <select
-              id="assignment-teacher"
+              id="assignment-teacher-filter"
               value={teacherId}
               onChange={(event) => {
                 setTeacherId(event.target.value)
@@ -114,6 +149,15 @@ export default function AdminPlottingPage() {
             </select>
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={() => setFormOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-2 text-sm font-semibold text-white"
+        >
+          <AddRoundedIcon className="h-4! w-4!" aria-hidden="true" />
+          Tambah
+        </button>
       </div>
 
       <SectionState
@@ -125,8 +169,8 @@ export default function AdminPlottingPage() {
             title={tab === 'memberships' ? 'Belum ada penempatan siswa' : 'Belum ada penugasan guru'}
             message={
               tab === 'memberships'
-                ? 'Tidak ada data penempatan dengan filter saat ini.'
-                : 'Tidak ada data penugasan dengan filter saat ini.'
+                ? 'Tambahkan penempatan siswa untuk kelas ini.'
+                : 'Tambahkan penugasan guru untuk kelas dan mata pelajaran.'
             }
           />
         }
@@ -140,9 +184,9 @@ export default function AdminPlottingPage() {
         errorTitle={tab === 'memberships' ? 'Penempatan siswa tidak dapat dimuat.' : 'Penugasan guru tidak dapat dimuat.'}
       >
         {tab === 'memberships' ? (
-          <MembershipsTable items={itemList} />
+          <MembershipsTable items={itemList} onToggle={onToggle} pendingId={pendingId} />
         ) : (
-          <AssignmentsManageTable items={itemList} />
+          <AssignmentsManageTable items={itemList} onToggle={onToggle} pendingId={pendingId} />
         )}
 
         <Pagination
@@ -153,6 +197,26 @@ export default function AdminPlottingPage() {
           onChange={setPage}
         />
       </SectionState>
+
+      {tab === 'memberships' ? (
+        <MembershipFormDialog open={formOpen} onClose={() => setFormOpen(false)} />
+      ) : (
+        <AssignmentFormDialog open={formOpen} onClose={() => setFormOpen(false)} />
+      )}
+
+      <ConfirmDialog
+        open={Boolean(deactivateTarget)}
+        title="Nonaktifkan data"
+        message={
+          tab === 'memberships'
+            ? `Nonaktifkan penempatan ${deactivateTarget?.student?.name ?? 'siswa ini'}? Riwayat absensi tetap tersimpan.`
+            : `Nonaktifkan penugasan ${deactivateTarget?.teacher?.name ?? 'guru ini'}? Sesi terkait tidak lagi muncul untuk guru.`
+        }
+        confirmLabel="Nonaktifkan"
+        busy={activeUpdate.isPending}
+        onConfirm={confirmDeactivate}
+        onClose={() => setDeactivateTarget(null)}
+      />
     </section>
   )
 }

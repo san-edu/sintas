@@ -5,7 +5,7 @@ import { renderApp, studentUser } from '../../test/fixtures'
 import { API_BASE_URL, server } from '../../test/server'
 
 describe('akses role halaman admin', () => {
-  it.each(['/app/admin', '/app/admin/banners', '/app/admin/users'])(
+  it.each(['/app/admin', '/app/admin/banners', '/app/admin/users', '/app/admin/plotting'])(
     'siswa tidak dapat membuka %s',
     async (path) => {
       server.use(

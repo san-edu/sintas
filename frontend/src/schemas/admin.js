@@ -154,6 +154,29 @@ export const subjectSchema = z.object({
   name: z.string().trim().min(1, 'Nama wajib diisi.').max(150),
 })
 
+export const membershipFormSchema = z.object({
+  classId: z.string().trim().min(1, 'Pilih kelas.'),
+  studentId: z.string().trim().min(1, 'Pilih siswa.'),
+})
+
+export function toMembershipPayload(values) {
+  return { classId: Number(values.classId), studentId: Number(values.studentId) }
+}
+
+export const assignmentFormSchema = z.object({
+  teacherId: z.string().trim().min(1, 'Pilih guru.'),
+  classId: z.string().trim().min(1, 'Pilih kelas.'),
+  subjectId: z.string().trim().min(1, 'Pilih mata pelajaran.'),
+})
+
+export function toAssignmentPayload(values) {
+  return {
+    teacherId: Number(values.teacherId),
+    classId: Number(values.classId),
+    subjectId: Number(values.subjectId),
+  }
+}
+
 export const reportFilterSchema = z.object({
   from: dateField,
   to: dateField,
