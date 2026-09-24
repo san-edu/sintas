@@ -1,0 +1,739 @@
+openapi: 3.0.3
+info:
+  title: SINTAS API
+  version: 1.0.0
+  description: REST API untuk absensi sekolah. Semua timestamp API menggunakan ISO 8601.
+servers:
+  - url: /
+tags:
+  - name: Health
+  - name: Auth
+  - name: Academic
+  - name: Banner
+  - name: Attendance
+  - name: Report
+  - name: User
+paths:
+  /health/live:
+    get:
+      tags: [Health]
+      responses:
+        "200":
+          {
+            description: Process hidup,
+            content:
+              {
+                application/json:
+                  { schema: { $ref: "#/components/schemas/DataResponse" } },
+              },
+          }
+  /health/ready:
+    get:
+      tags: [Health]
+      responses:
+        "200": { description: Database siap }
+        "503":
+          {
+            description: Database belum siap,
+            content: {
+              application/json: {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          }
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/LoginRequest" } },
+            },
+        }
+      responses:
+        "200":
+          {
+            description: Login berhasil,
+            headers: { Set-Cookie: { schema: { type: string } } },
+          }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      responses:
+        "200":
+          {
+            description: Logout berhasil,
+            content:
+              {
+                application/json:
+                  {
+                    schema:
+                      { $ref: "#/components/schemas/DataResponse" },
+                  },
+              },
+          }
+  /api/v1/auth/forgot-password:
+    post:
+      tags: [Auth]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    { $ref: "#/components/schemas/ForgotPasswordRequest" },
+                },
+            },
+        }
+      responses:
+        {
+          "200": { $ref: "#/components/responses/Data" },
+          "400": { $ref: "#/components/responses/ValidationError" },
+        }
+  /api/v1/me:
+    get:
+      tags: [Auth]
+      security: [{ cookieAuth: [] }]
+      responses:
+        {
+          "200": { $ref: "#/components/responses/Data" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+        }
+    patch:
+      tags: [Auth]
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/ProfileRequest" } },
+            },
+        }
+      responses:
+        {
+          "200": { $ref: "#/components/responses/Data" },
+          "400": { $ref: "#/components/responses/ValidationError" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+        }
+  /api/v1/academic/education-levels:
+    get:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+    post:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        requestBody: { $ref: "#/components/requestBodies/Name" },
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+  /api/v1/academic/education-levels/{id}:
+    patch:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/Id" }],
+        requestBody: { $ref: "#/components/requestBodies/Name" },
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+    delete:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/Id" }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+  /api/v1/academic/classes:
+    get:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { $ref: "#/components/responses/Data" } },
+      }
+    post:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        requestBody: { $ref: "#/components/requestBodies/Class" },
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+  /api/v1/academic/classes/{id}:
+    patch:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/Id" }],
+        requestBody: { $ref: "#/components/requestBodies/Class" },
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+    delete:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/Id" }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+  /api/v1/academic/subjects:
+    get:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { $ref: "#/components/responses/Data" } },
+      }
+    post:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        requestBody: { $ref: "#/components/requestBodies/Name" },
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+  /api/v1/academic/subjects/{id}:
+    patch:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/Id" }],
+        requestBody: { $ref: "#/components/requestBodies/Name" },
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+    delete:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/Id" }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+  /api/v1/academic/memberships:
+    get:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { $ref: "#/components/responses/Data" }, "403": { $ref: "#/components/responses/Forbidden" } },
+      }
+    post:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+  /api/v1/academic/assignments:
+    get:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { $ref: "#/components/responses/Data" } },
+      }
+    post:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+  /api/v1/academic/assignments/manage:
+    get:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { $ref: "#/components/responses/Data" }, "403": { $ref: "#/components/responses/Forbidden" } },
+      }
+  /api/v1/academic/assignments/{id}:
+    patch:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/Id" }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+  /api/v1/academic/my-classes:
+    get:
+      {
+        tags: [Academic],
+        security: [{ cookieAuth: [] }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+  /api/v1/banners:
+    get:
+      {
+        tags: [Banner],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { $ref: "#/components/responses/Data" } },
+      }
+    post:
+      {
+        tags: [Banner],
+        security: [{ cookieAuth: [] }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+  /api/v1/banners/manage:
+    get:
+      {
+        tags: [Banner],
+        security: [{ cookieAuth: [] }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+  /api/v1/banners/{id}:
+    patch:
+      {
+        tags: [Banner],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/Id" }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+    delete:
+      {
+        tags: [Banner],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/Id" }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+  /api/v1/attendance-sessions:
+    get:
+      {
+        tags: [Attendance],
+        security: [{ cookieAuth: [] }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+    post:
+      {
+        tags: [Attendance],
+        security: [{ cookieAuth: [] }],
+        requestBody: { $ref: "#/components/requestBodies/Session" },
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "409": { $ref: "#/components/responses/Conflict" },
+          },
+      }
+  /api/v1/attendance-sessions/{id}/qr:
+    get:
+      tags: [Attendance]
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        {
+          "200": { $ref: "#/components/responses/Data" },
+          "404": { $ref: "#/components/responses/NotFound" },
+        }
+  /api/v1/attendance-scans:
+    post:
+      tags: [Attendance]
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    {
+                      type: object,
+                      required: [qrPayload],
+                      properties: { qrPayload: { type: string } },
+                    },
+                },
+            },
+        }
+      responses:
+        {
+          "200": { $ref: "#/components/responses/Data" },
+          "409": { $ref: "#/components/responses/Conflict" },
+        }
+  /api/v1/attendance/history:
+    get:
+      {
+        tags: [Attendance],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/ReportQuery" }],
+        responses: { "200": { $ref: "#/components/responses/Data" } },
+      }
+  /api/v1/attendance/today:
+    get:
+      {
+        tags: [Attendance],
+        security: [{ cookieAuth: [] }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+  /api/v1/attendance/classes/{id}:
+    get:
+      tags: [Attendance]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        [
+          { $ref: "#/components/parameters/Id" },
+          { $ref: "#/components/parameters/ReportQuery" },
+        ]
+      responses:
+        {
+          "200": { $ref: "#/components/responses/Data" },
+          "403": { $ref: "#/components/responses/Forbidden" },
+        }
+  /api/v1/reports/attendance:
+    get:
+      {
+        tags: [Report],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/ReportQuery" }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+  /api/v1/reports/attendance/export:
+    get:
+      tags: [Report]
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/ReportQuery" }]
+      responses:
+        "200":
+          description: Workbook ExcelJS berisi kolom yang dikunci di docs/DECISIONS.md.
+          headers: { Content-Disposition: { schema: { type: string } } }
+          content:
+            {
+              application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+                { schema: { type: string, format: binary } },
+            }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          {
+            description: Tidak ada data untuk diekspor,
+            content:
+              {
+                application/json:
+                  { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+              },
+          }
+        "429":
+          {
+            description: Export sedang penuh,
+            content:
+              {
+                application/json:
+                  { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+              },
+          }
+  /api/v1/users:
+    get:
+      {
+        tags: [User],
+        security: [{ cookieAuth: [] }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+    post:
+      {
+        tags: [User],
+        security: [{ cookieAuth: [] }],
+        responses:
+          {
+            "200": { $ref: "#/components/responses/Data" },
+            "403": { $ref: "#/components/responses/Forbidden" },
+          },
+      }
+  /api/v1/users/{id}/password:
+    patch:
+      tags: [User]
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        {
+          "200": { $ref: "#/components/responses/Data" },
+          "403": { $ref: "#/components/responses/Forbidden" },
+        }
+components:
+  securitySchemes:
+    cookieAuth: { type: apiKey, in: cookie, name: auth_token }
+  parameters:
+    Id:
+      {
+        name: id,
+        in: path,
+        required: true,
+        schema: { type: integer, minimum: 1 },
+      }
+    ReportQuery:
+      name: from
+      in: query
+      required: false
+      schema: { type: string, format: date-time }
+      description: Filter tambahan `to`, `status`, `classId`, `assignmentId`, `page`, `limit`, `sort`, dan `order` mengikuti attendanceReportQuerySchema.
+  requestBodies:
+    Name:
+      {
+        required: true,
+        content:
+          {
+            application/json:
+              {
+                schema:
+                  {
+                    type: object,
+                    required: [name],
+                    properties: { name: { type: string } },
+                  },
+              },
+          },
+      }
+    Class:
+      {
+        required: true,
+        content:
+          {
+            application/json:
+              {
+                schema:
+                  {
+                    type: object,
+                    required: [name, educationLevelId],
+                    properties:
+                      {
+                        name: { type: string },
+                        educationLevelId: { type: integer },
+                      },
+                  },
+              },
+          },
+      }
+    Session:
+      {
+        required: true,
+        content:
+          {
+            application/json:
+              {
+                schema:
+                  {
+                    type: object,
+                    required:
+                      [assignmentId, sessionDate, startAt, endAt, timezone],
+                    properties:
+                      {
+                        assignmentId: { type: integer },
+                        sessionDate: { type: string, format: date },
+                        startAt: { type: string, format: date-time },
+                        endAt: { type: string, format: date-time },
+                        timezone: { type: string },
+                      },
+                  },
+              },
+          },
+      }
+  schemas:
+    DataResponse:
+      { type: object, required: [data], properties: { data: { type: object } } }
+    ErrorResponse:
+      {
+        type: object,
+        required: [error],
+        properties:
+          {
+            error:
+              {
+                type: object,
+                required: [code, message],
+                properties:
+                  {
+                    code: { type: string },
+                    message: { type: string },
+                    fieldErrors:
+                      {
+                        type: object,
+                        additionalProperties:
+                          { type: array, items: { type: string } },
+                      },
+                  },
+              },
+          },
+      }
+    LoginRequest:
+      {
+        type: object,
+        required: [username, password],
+        properties:
+          {
+            username: { type: string },
+            password: { type: string, format: password },
+          },
+      }
+    ForgotPasswordRequest:
+      {
+        type: object,
+        required: [email, birthDate, password, passwordConfirmation],
+        properties:
+          {
+            email: { type: string, format: email },
+            birthDate: { type: string, format: date },
+            password: { type: string, format: password },
+            passwordConfirmation: { type: string, format: password },
+          },
+      }
+    ProfileRequest:
+      {
+        type: object,
+        properties:
+          {
+            name: { type: string },
+            email: { type: string, format: email },
+            phone: { type: string },
+            birthDate: { type: string, format: date },
+          },
+      }
+  responses:
+    Data:
+      {
+        description: JSON data response,
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/DataResponse" } },
+          },
+      }
+    ValidationError:
+      {
+        description: Validation error,
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+          },
+      }
+    Unauthorized:
+      {
+        description: Unauthenticated,
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+          },
+      }
+    Forbidden:
+      {
+        description: Forbidden,
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+          },
+      }
+    NotFound:
+      {
+        description: Resource not found,
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+          },
+      }
+    Conflict:
+      {
+        description: Conflict,
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+          },
+      }
+    InternalError:
+      {
+        description: Internal server error,
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+          },
+      }

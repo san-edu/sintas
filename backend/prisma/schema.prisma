@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum AttendanceStatus {
+  HADIR
+  TERLAMBAT
+  TIDAK_HADIR
+}
+
+model User {
+  id                 Int                 @id @default(autoincrement())
+  username           String              @unique @db.VarChar(100)
+  passwordHash       String              @map("password_hash") @db.VarChar(255)
+  role               UserRole
+  email              String?             @unique @db.VarChar(255)
+  phone              String?             @db.VarChar(30)
+  birthDate          DateTime?           @map("birth_date") @db.Date
+  name               String              @db.VarChar(150)
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamp(6)
+  studentProfile     StudentProfile?
+  teacherProfile     TeacherProfile?
+  createdSessions    AttendanceSession[] @relation("SessionCreatedBy")
+  createdBanners     Banner[]            @relation("BannerCreatedBy")
+  classMemberships   ClassStudent[]      @relation("StudentMembership")
+  teacherAssignments TeacherAssignment[] @relation("TeacherAssignmentOwner")
+  attendanceRecords  AttendanceRecord[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model StudentProfile {
+  userId           Int            @id @map("user_id")
+  studentNumber    String         @unique @map("student_number") @db.VarChar(50)
+  educationLevelId Int            @map("education_level_id")
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  educationLevel   EducationLevel @relation(fields: [educationLevelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([educationLevelId])
+  @@map("student_profiles")
+}
+
+model TeacherProfile {
+  userId Int  @id @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("teacher_profiles")
+}
+
+model EducationLevel {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique @db.VarChar(100)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamp(6)
+  studentProfiles StudentProfile[]
+  classes         Class[]
+
+  @@map("education_levels")
+}
+
+model Class {
+  id                 Int                 @id @default(autoincrement())
+  name               String              @db.VarChar(100)
+  educationLevelId   Int                 @map("education_level_id")
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamp(6)
+  educationLevel     EducationLevel      @relation(fields: [educationLevelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  memberships        ClassStudent[]
+  teacherAssignments TeacherAssignment[]
+  attendanceSessions AttendanceSession[]
+
+  @@unique([educationLevelId, name])
+  @@index([educationLevelId])
+  @@map("classes")
+}
+
+model Subject {
+  id                 Int                 @id @default(autoincrement())
+  name               String              @unique @db.VarChar(150)
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamp(6)
+  teacherAssignments TeacherAssignment[]
+
+  @@map("subjects")
+}
+
+model ClassStudent {
+  id        Int      @id @default(autoincrement())
+  classId   Int      @map("class_id")
+  studentId Int      @map("student_id")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  student   User     @relation("StudentMembership", fields: [studentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  // MySQL has no partial unique index; service validation must govern historical inactive rows.
+  @@unique([classId, studentId, isActive])
+  @@index([studentId, isActive])
+  @@index([classId, isActive])
+  @@map("class_students")
+}
+
+model TeacherAssignment {
+  id        Int                 @id @default(autoincrement())
+  teacherId Int                 @map("teacher_id")
+  classId   Int                 @map("class_id")
+  subjectId Int                 @map("subject_id")
+  isActive  Boolean             @default(true) @map("is_active")
+  createdAt DateTime            @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime            @updatedAt @map("updated_at") @db.Timestamp(6)
+  teacher   User                @relation("TeacherAssignmentOwner", fields: [teacherId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  class     Class               @relation(fields: [classId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  subject   Subject             @relation(fields: [subjectId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sessions  AttendanceSession[]
+
+  // MySQL has no partial unique index; service validation must govern historical inactive rows.
+  @@unique([teacherId, classId, subjectId, isActive])
+  @@index([teacherId, isActive])
+  @@index([classId, isActive])
+  @@index([subjectId, isActive])
+  @@map("teacher_assignments")
+}
+
+model AttendanceSession {
+  id           Int                @id @default(autoincrement())
+  assignmentId Int                @map("assignment_id")
+  classId      Int                @map("class_id")
+  sessionDate  DateTime           @map("session_date") @db.Date
+  startAt      DateTime           @map("start_at") @db.Timestamp(6)
+  endAt        DateTime           @map("end_at") @db.Timestamp(6)
+  qrPayload    String             @unique @map("qr_payload") @db.VarChar(255)
+  createdById  Int                @map("created_by")
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamp(6)
+  assignment   TeacherAssignment  @relation(fields: [assignmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  class        Class              @relation(fields: [classId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy    User               @relation("SessionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  records      AttendanceRecord[]
+
+  @@unique([assignmentId, sessionDate, startAt, endAt])
+  @@index([assignmentId, startAt, endAt])
+  @@index([classId, sessionDate])
+  @@map("attendance_sessions")
+}
+
+model AttendanceRecord {
+  id          Int               @id @default(autoincrement())
+  sessionId   Int               @map("session_id")
+  studentId   Int               @map("student_id")
+  scannedAt   DateTime          @map("scanned_at") @db.Timestamp(6)
+  status      AttendanceStatus
+  lateMinutes Int?              @map("late_minutes") @db.UnsignedInt
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime          @updatedAt @map("updated_at") @db.Timestamp(6)
+  session     AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  student     User              @relation(fields: [studentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([sessionId, studentId])
+  @@index([studentId, scannedAt])
+  @@index([sessionId, status])
+  @@map("attendance_records")
+}
+
+model Banner {
+  id             Int       @id @default(autoincrement())
+  title          String    @db.VarChar(200)
+  imageUrl       String?   @map("image_url") @db.VarChar(500)
+  content        String?   @db.Text
+  isActive       Boolean   @default(false) @map("is_active")
+  displayStartAt DateTime? @map("display_start_at") @db.Timestamp(6)
+  displayEndAt   DateTime? @map("display_end_at") @db.Timestamp(6)
+  createdById    Int       @map("created_by")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+  createdBy      User      @relation("BannerCreatedBy", fields: [createdById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([isActive, displayStartAt, displayEndAt])
+  @@index([createdById])
+  @@map("banners")
+}

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "rules": [
+    "TOKEN SAVING MODE ACTIVATED",
+    "Be extremely brief. Prioritize raw code blocks over explanations.",
+    "Do not greet, summarize, or add conversational filler.",
+    "Never rewrite the entire file; only output the specific lines/diffs that changed.",
+    "Do not run terminal commands or file reads without my explicit permission."
+  ]
+}
